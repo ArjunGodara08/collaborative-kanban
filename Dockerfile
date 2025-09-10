@@ -1,19 +1,17 @@
-
 # ---- build frontend ----
 FROM node:20-alpine AS frontend-build
-WORKDIR /app
-COPY client/package.json client/package-lock.json* ./client/
 WORKDIR /app/client
-COPY client/ ./
-RUN npm ci && npm run build
+COPY client/package*.json ./
+RUN npm install
+COPY client/ .
+RUN npm run build
 
 # ---- build backend ----
 FROM node:20-alpine AS backend-build
-WORKDIR /app
-COPY server/package.json server/package-lock.json* ./server/
 WORKDIR /app/server
-COPY server/ ./
-RUN npm ci --production
+COPY server/package*.json ./
+RUN npm install --production
+COPY server/ .
 
 # ---- final image ----
 FROM node:20-alpine AS runtime
@@ -23,13 +21,11 @@ WORKDIR /app
 # copy backend
 COPY --from=backend-build /app/server /app/server
 
-# copy frontend build into server's public folder (serve via express static)
+# copy frontend build into backend public folder
 COPY --from=frontend-build /app/client/dist /app/server/public
 
 WORKDIR /app/server
 EXPOSE 4000
 CMD ["node", "src/index.js"]
-
-
 
 
